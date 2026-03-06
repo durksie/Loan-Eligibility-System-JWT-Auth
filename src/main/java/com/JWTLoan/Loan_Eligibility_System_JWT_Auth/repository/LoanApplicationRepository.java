@@ -11,12 +11,13 @@ import java.util.List;
 
 @Repository
 public interface LoanApplicationRepository extends JpaRepository<LoanApplication, Long> {
-    List<LoanApplication> findByUser(UserEntity userEntity);
+    List<LoanApplication> findByUserEntity(UserEntity userEntity);
+
     List<LoanApplication> findByStatus(String status);
 
-    @Query("SELECT l FROM LoanApplication l WHERE l.user.id = :userId ORDER BY l.createdAt DESC")
+    @Query("SELECT l FROM LoanApplication l WHERE l.userEntity.id = :userId ORDER BY l.createdAt DESC")
     List<LoanApplication> findByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
 
-    @Query("SELECT COUNT(l) FROM LoanApplication l WHERE l.user.id = :userId AND l.status = 'APPROVED'")
+    @Query("SELECT COUNT(l) FROM LoanApplication l WHERE l.userEntity.id = :userId AND l.status = 'APPROVED'")
     long countApprovedApplicationsByUserId(@Param("userId") Long userId);
 }

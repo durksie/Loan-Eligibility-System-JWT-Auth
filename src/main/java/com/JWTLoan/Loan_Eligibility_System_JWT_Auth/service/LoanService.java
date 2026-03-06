@@ -68,7 +68,7 @@ public class LoanService {
         UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        return loanRepository.findByUser(user).stream()
+        return loanRepository.findByUserEntity(user).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
