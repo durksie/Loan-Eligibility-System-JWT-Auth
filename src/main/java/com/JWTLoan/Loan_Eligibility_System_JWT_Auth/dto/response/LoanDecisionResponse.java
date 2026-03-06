@@ -17,4 +17,5 @@ public class LoanDecisionResponse {
     private BigDecimal requestedAmount;
     private Integer termMonths;
     private String applicationDate;
+    private String status;
 }

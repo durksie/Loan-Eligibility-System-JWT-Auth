@@ -4,10 +4,12 @@ import com.JWTLoan.Loan_Eligibility_System_JWT_Auth.config.JwtService;
 import com.JWTLoan.Loan_Eligibility_System_JWT_Auth.dto.request.LoginRequest;
 import com.JWTLoan.Loan_Eligibility_System_JWT_Auth.dto.response.AuthResponse;
 import com.JWTLoan.Loan_Eligibility_System_JWT_Auth.service.JwtUserDetailsService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,8 +25,8 @@ public class AuthController {
     private final JwtService jwtService;
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
-        authenticationManager.authenticate(
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
 
@@ -35,7 +37,9 @@ public class AuthController {
                 .token(jwt)
                 .username(userDetails.getUsername())
                 .message("Login successful")
+                .expiresIn(jwtService.extractExpiration(jwt).getTime())
                 .build());
     }
+
 
 }

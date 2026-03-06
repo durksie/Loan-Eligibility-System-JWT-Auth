@@ -18,29 +18,29 @@ public class LoanApplication {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity userEntity;
 
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal amount;
 
     @Column(name = "term_months", nullable = false)
     private Integer termMonths;
 
-    @Column(nullable = false)
-    private String status; // APPROVED, REJECTED, REVIEW, PENDING
+    @Column(nullable = false, length = 20)
+    private String status;
 
-    @Column(name = "risk_level")
-    private String riskLevel; // LOW, MEDIUM, HIGH
+    @Column(name = "risk_level", length = 20)
+    private String riskLevel;
 
     @Column(name = "decision_reason", length = 500)
     private String decisionReason;
 
-    @Column(name = "dti_ratio")
+    @Column(name = "dti_ratio", precision = 5, scale = 2)
     private BigDecimal dtiRatio;
 
-    @Column(name = "disposable_income")
+    @Column(name = "disposable_income", precision = 15, scale = 2)
     private BigDecimal disposableIncome;
 
     @Column(name = "created_at")
@@ -53,11 +53,13 @@ public class LoanApplication {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
+        if (status == null) {
+            status = "PENDING";
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-
 }

@@ -9,11 +9,15 @@ import com.JWTLoan.Loan_Eligibility_System_JWT_Auth.model.UserEntity;
 import com.JWTLoan.Loan_Eligibility_System_JWT_Auth.repository.LoanApplicationRepository;
 import com.JWTLoan.Loan_Eligibility_System_JWT_Auth.repository.UserRepository;
 import com.JWTLoan.Loan_Eligibility_System_JWT_Auth.rules.DecisionEngine;
+import com.JWTLoan.Loan_Eligibility_System_JWT_Auth.rules.LoanDecision;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
@@ -24,40 +28,30 @@ public class LoanService {
 
     @Transactional
     public LoanDecisionResponse applyForLoan(String username, LoanApplicationRequest request) {
-        UserEntity userEntity = userRepository.findByUsername(username)
+        UserEntity user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // Get decision from engine
-        LoanDecisionResponse decision = decisionEngine.evaluate(userEntity, request);
+        LoanDecision decision = decisionEngine.evaluate(user, request);
 
         // Create loan application
         LoanApplication application = new LoanApplication();
-        application.setUserEntity(userEntity);
+        application.setUserEntity(user);
         application.setAmount(request.getAmount());
         application.setTermMonths(request.getTermMonths());
-        application.setStatus(decision.getDecision());
-        application.setRiskLevel(decision.getRiskLevel());
+        application.setStatus(decision.getStatus());
+        application.setRiskLevel(decision.getRiskLevel() != null ?
+                decision.getRiskLevel().name() : null);
         application.setDecisionReason(decision.getReason());
         application.setDtiRatio(decision.getDtiRatio());
         application.setDisposableIncome(decision.getDisposableIncome());
 
         LoanApplication saved = loanRepository.save(application);
 
-        // Update decision with application ID
-        return LoanDecisionResponse.builder()
-                .applicationId(saved.getId())
-                .decision(saved.getStatus())
-                .riskLevel(saved.getRiskLevel())
-                .reason(saved.getDecisionReason())
-                .dtiRatio(saved.getDtiRatio())
-                .disposableIncome(saved.getDisposableIncome())
-                .requestedAmount(saved.getAmount())
-                .termMonths(saved.getTermMonths())
-                .applicationDate(saved.getCreatedAt().format(DateTimeFormatter.ISO_DATE_TIME))
-                .build();
+        return mapToResponse(saved);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public LoanDecisionResponse getLoanApplication(String username, Long applicationId) {
         LoanApplication application = loanRepository.findById(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Loan application not found"));
@@ -70,6 +64,16 @@ public class LoanService {
     }
 
     @Transactional
+    public List<LoanDecisionResponse> getUserLoanApplications(String username) {
+        UserEntity user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        return loanRepository.findByUser(user).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
     public LoanDecisionResponse updateLoanApplication(String username, Long id, LoanApplicationRequest request) {
         LoanApplication application = loanRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Loan application not found"));
@@ -78,14 +82,20 @@ public class LoanService {
             throw new UnauthorizedException("You don't have permission to update this application");
         }
 
+        // Only allow updates if application is still pending
+        if (!"PENDING".equals(application.getStatus()) && !"REVIEW".equals(application.getStatus())) {
+            throw new IllegalStateException("Cannot update application that is already " + application.getStatus());
+        }
+
         // Re-evaluate with updated information
-        UserEntity userEntity = application.getUserEntity();
-        LoanDecisionResponse decision = decisionEngine.evaluate(userEntity, request);
+        UserEntity user = application.getUserEntity();
+        LoanDecision decision = decisionEngine.evaluate(user, request);
 
         application.setAmount(request.getAmount());
         application.setTermMonths(request.getTermMonths());
-        application.setStatus(decision.getDecision());
-        application.setRiskLevel(decision.getRiskLevel());
+        application.setStatus(decision.getStatus());
+        application.setRiskLevel(decision.getRiskLevel() != null ?
+                decision.getRiskLevel().name() : null);
         application.setDecisionReason(decision.getReason());
         application.setDtiRatio(decision.getDtiRatio());
         application.setDisposableIncome(decision.getDisposableIncome());
@@ -117,6 +127,8 @@ public class LoanService {
                 .requestedAmount(application.getAmount())
                 .termMonths(application.getTermMonths())
                 .applicationDate(application.getCreatedAt().format(DateTimeFormatter.ISO_DATE_TIME))
+                .status(application.getStatus())
                 .build();
     }
+
 }

@@ -13,6 +13,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 
+
 @RestController
 @RequestMapping("/api/loan")
 @RequiredArgsConstructor
@@ -32,6 +33,13 @@ public class UserController {
         return ResponseEntity.created(location).body(response);
     }
 
+    @GetMapping("/user/profile")
+    public ResponseEntity<UserResponse> getUserProfile(Authentication authentication) {
+        String username = authentication.getName();
+        UserResponse response = userService.getUserByUsername(username);
+        return ResponseEntity.ok(response);
+    }
+
     @PutMapping("/user/{id}")
     public ResponseEntity<UserResponse> updateUser(
             Authentication authentication,
@@ -41,4 +49,5 @@ public class UserController {
         UserResponse response = userService.updateUser(username, id, request);
         return ResponseEntity.ok(response);
     }
+
 }
