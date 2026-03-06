@@ -30,8 +30,9 @@ The engine acts as a "Robotic Loan Officer," applying structured financial rules
 *  **Monthly Salary & Expenses**: Analyzes cash flow liquidity.
 *  **Debt-to-Income (DTI) Ratio**: Calculates the percentage of gross monthly income that goes toward paying debts.
 *  **Credit Score Analysis**: Benchmarks historical reliability (300-850 scale).
-  
+--- 
 ### **Decision Rules Summary**
+---
 1. Automatic Rejection
 * Credit score < 650
 
@@ -50,7 +51,7 @@ All other cases with risk assessment:
 *  MEDIUM Risk: Credit ≥650, DTI <55%
 
 * HIGH Risk: All other cases
-
+---
 ### **Automated Outputs:**
 *  **Approval Status**: (Approved / Rejected / Manual Review)
 *  **Risk Level**: (Low / Medium / High / Very High)
