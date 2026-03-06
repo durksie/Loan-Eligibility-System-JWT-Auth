@@ -95,52 +95,196 @@ This system was developed to showcase proficiency in:
 * Signature: Prevents tampering by signing the token with a secret key.
 
 * Note: Never share your jwt.secret key. If compromised, attackers can forge admin tokens.
-
-# 🔌 API Endpoints
-## POST /api/loan/apply | Allowed Roles: USER, ADMIN
-
-## JSON
-// Header: Authorization: Bearer <token>
-// Request
+---
+# Loan Eligibility System API Documentation
+---
+## Base URL: http://localhost:8080
+---
+## Authentication 
+The API uses JWT (JSON Web Token) for authentication. Most endpoints require a valid JWT token in the Authorization header.
 ```
+Headers for Protected Endpoints
+
+Authorization: Bearer <your_jwt_token>
+Content-Type: application/json
+```
+
+## 📑 Table of Contents
+
+| Section | API / Feature |
+|---------|---------------|
+| **Public APIs (No Auth Required)** | Register User |
+|  | Login |
+| **User Management APIs** | Get User Profile |
+|  | Update User |
+| **Loan Application APIs** | Apply for Loan |
+|  | Get Loan Application |
+|  | Get All User Loans |
+|  | Update Loan Application |
+|  | Delete Loan Application |
+
+
+# Public APIs (No Auth Required)
+### 1. Register User
+Creates a new user account in the system.
+```
+Endpoint: POST /api/loan/user
+```
+Request Body:
+```
+json
 {
-  "amount": 5000,
-  "termMonths": 12,
-  "purpose": "debt_consolidation"
+    "username": "john_doe",
+    "password": "Test@123",
+    "email": "john.doe@email.com",
+    "fullName": "John Doe",
+    "salary": 60000,
+    "expenses": 25000,
+    "creditScore": 750
 }
 ```
+## Validation Rules
 
-## // Response (202 Accepted)
+| Field       | Rules                                             |
+|------------|--------------------------------------------------|
+| `username`  | 3-50 chars, alphanumeric + `._-`                |
+| `password`  | Min 6 chars, 1 digit, 1 lowercase, 1 uppercase, 1 special char |
+| `email`     | Valid email format                               |
+| `fullName`  | Max 100 chars                                    |
+| `salary`    | Positive number                                  |
+| `expenses`  | Positive number                                  |
+| `creditScore` | Between 300-850                               |
+
+#### Success Response (201 Created):
+
+json:
 ```
 {
-  "applicationId": "loan-67890",
-  "status": "PENDING_REVIEW"
+    "id": 1,
+    "username": "john_doe",
+    "email": "john.doe@email.com",
+    "fullName": "John Doe",
+    "salary": 60000,
+    "expenses": 25000,
+    "creditScore": 750,
+    "createdAt": "2024-01-15T10:30:00",
+    "updatedAt": "2024-01-15T10:30:00"
 }
 ```
-## GET /api/loan/my-applications | Allowed Roles: USER
-// Header: Authorization: Bearer <token>
-// Response (200 OK)
-```
-  {
-    "applicationId": "loan-67890",
-    "amount": 5000,
-    "status": "APPROVED",
-    "createdAt": "2026-02-01"
-  }
-```
-## GET /api/admin/all | Allowed Roles: ADMIN
-// Header: Authorization: Bearer <admin_token>
-// Response (200 OK)
+### Error Responses:
+
+### json:
+// 400 Bad Request - Validation Error
 ```
 {
-  "totalApplications": 154,
-  "pendingCount": 12,
-  "applications": [ 
-    { "id": "loan-67890", "user": "jdoe_99", "status": "PENDING" } 
-  ]
+    "timestamp": "2024-01-15T10:30:00",
+    "status": 400,
+    "error": "Validation Failed",
+    "message": "Invalid input parameters",
+    "details": [
+        "Password must contain at least one digit, one lowercase, one uppercase, one special character",
+        "Email invalid format"
+    ],
+    "path": "/api/loan/user"
 }
 ```
+// 400 Bad Request - Duplicate User
+```
+{
+    "timestamp": "2024-01-15T10:30:00",
+    "status": 400,
+    "error": "Bad Request",
+    "message": "Username already exists",
+    "path": "/api/loan/user"
+}
+```
+### 2. Login
+Authenticates a user and returns a JWT token.
+```
+Endpoint: POST /api/auth/login
+```
+Request Body:
+```
+{
+    "username": "john_doe",
+    "password": "Test@123"
+}
+```
+Success Response (200 OK):
+```
+{
+    "token": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJqb2huX2RvZSIsImlhdCI6MTYyMzQ1Njc4OSwiZXhwIjoxNjIzNTQzMTg5fQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+    "username": "john_doe",
+    "message": "Login successful",
+    "expiresIn": 1623543189000
+}
+```
+Error Response (401 Unauthorized):
+```
+{
+    "timestamp": "2024-01-15T10:30:00",
+    "status": 401,
+    "error": "Unauthorized",
+    "message": "Invalid username or password",
+    "path": "/api/auth/login"
+}
+```
+# User Management APIs
+### 3. Get User Profile
+Retrieves the authenticated user's profile.
+```
+Endpoint: GET /api/loan/user/profile
+```
 
+Headers Required:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+```
+Success Response (200 OK):
+```
+{
+    "id": 1,
+    "username": "john_doe",
+    "email": "john.doe@email.com",
+    "fullName": "John Doe",
+    "salary": 60000,
+    "expenses": 25000,
+    "creditScore": 750,
+    "createdAt": "2024-01-15T10:30:00",
+    "updatedAt": "2024-01-15T10:30:00"
+}
+```
+Error Response (403 Forbidden):
+```
+{
+    "timestamp": "2024-01-15T10:30:00",
+    "status": 403,
+    "error": "Forbidden",
+    "message": "Access denied",
+    "path": "/api/loan/user/profile"
+}
+```
+### 4. Update User
+Updates the authenticated user's information.
+```
+Endpoint: PUT /api/loan/user/{id}
+```
+Example: PUT /api/loan/user/1
+
+Headers Required:
+```
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9...
+Content-Type: application/json
+```
+Request Body (all fields optional):
+```
+{
+    "fullName": "John Updated Doe",
+    "salary": 65000,
+    "expenses": 20000,
+    "creditScore": 780
+}
+```
 
 ## 👨‍💻 Author
 **Ntlemo Durksie** *Junior Software Engineer | Aspiring AI Engineer* *Specializing in Java, Spring Boot, and Secure API Development.*
